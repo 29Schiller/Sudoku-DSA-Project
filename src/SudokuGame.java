@@ -103,7 +103,7 @@ public class SudokuGame extends JFrame implements ActionListener {
         hintBtn = new JButton("Hint");
         checkBtn = new JButton("Check");
 
-        String[] difficulties = { "Easy", "Medium", "Hard", "Expert" };
+        String[] difficulties = { "Fast", "Easy", "Medium", "Hard", "Expert", "Extreme" };
         difficultyBox = new JComboBox<>(difficulties);
 
         newGameBtn.addActionListener(this);
