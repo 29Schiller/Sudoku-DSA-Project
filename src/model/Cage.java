@@ -1,8 +1,9 @@
 package model;
 
-import utils.Point;
-
+import java.util.ArrayList;
 import java.util.List;
+
+import utils.Point;
 
 public class Cage {
     private final int sum;
@@ -10,7 +11,7 @@ public class Cage {
 
     public Cage(int sum, List<Point> cells) {
         this.sum = sum;
-        this.cells = List.copyOf(cells); // Ensure immutability
+        this.cells = new ArrayList<>(cells);
     }
 
     public int getSum() {
@@ -18,6 +19,6 @@ public class Cage {
     }
 
     public List<Point> getCells() {
-        return cells;
+        return new ArrayList<>(cells);
     }
 }

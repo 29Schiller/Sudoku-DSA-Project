@@ -1,62 +1,58 @@
 package view;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.GridLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+import mode.GameMode;
+import model.Puzzle;
+import model.Solution;
 import utils.GameModeType;
 
-import javax.swing.*;
-import java.awt.*;
-
-public class WelcomeScreen extends JFrame {
-    private JComboBox<String> difficultyBox;
+public class WelcomeScreen extends JFrame implements GameScreen {
     private JComboBox<GameModeType> modeBox;
+    private JComboBox<String> difficultyBox;
     private WelcomeScreenListener listener;
 
     public WelcomeScreen() {
         setTitle("Sudoku Game - Welcome");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new GridBagLayout());
+        setLayout(new BorderLayout());
         initializeGUI();
         pack();
         setLocationRelativeTo(null);
         setResizable(false);
     }
 
-    public void setListener(WelcomeScreenListener listener) {
-        this.listener = listener;
-    }
-
     private void initializeGUI() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        JLabel titleLabel = new JLabel("Welcome to Sudoku Game!", SwingConstants.CENTER);
+        // Title Panel
+        JPanel titlePanel = new JPanel();
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JLabel titleLabel = new JLabel("Welcome to Sudoku!");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        add(titleLabel, gbc);
+        titlePanel.add(titleLabel);
+        add(titlePanel, BorderLayout.NORTH);
 
-        JLabel modeLabel = new JLabel("Select Mode:");
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        add(modeLabel, gbc);
+        // Control Panel
+        JPanel controlPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        controlPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
+        controlPanel.add(new JLabel("Mode:"));
         modeBox = new JComboBox<>(GameModeType.values());
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        add(modeBox, gbc);
+        controlPanel.add(modeBox);
 
-        JLabel difficultyLabel = new JLabel("Select Difficulty:");
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        add(difficultyLabel, gbc);
-
+        controlPanel.add(new JLabel("Difficulty:"));
         String[] difficulties = {"EASY", "MEDIUM", "HARD", "EXPERT"};
         difficultyBox = new JComboBox<>(difficulties);
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        add(difficultyBox, gbc);
+        controlPanel.add(difficultyBox);
 
         JButton startButton = new JButton("Start Game");
         startButton.addActionListener(_ -> {
@@ -64,9 +60,58 @@ public class WelcomeScreen extends JFrame {
                 listener.onStartGame(modeBox.getSelectedItem().toString(), (String) difficultyBox.getSelectedItem());
             }
         });
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        add(startButton, gbc);
+        controlPanel.add(new JLabel()); // Spacer
+        controlPanel.add(startButton);
+
+        add(controlPanel, BorderLayout.CENTER);
+    }
+
+    @Override
+    public void setListener(GameScreenListener listener) {
+        // Not used for WelcomeScreen, but required by interface
+    }
+
+    public void setWelcomeListener(WelcomeScreenListener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public void updateBoard(Puzzle puzzle, Solution solution, GameMode mode) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void updateCell(int row, int col, String value, Color foreground, Color background, boolean editable) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void updateTime(String time) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void updateScore(int score) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void updateStatus(String status) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void showVictoryMessage(String message) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public boolean confirmSolve() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void stopTimer() {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

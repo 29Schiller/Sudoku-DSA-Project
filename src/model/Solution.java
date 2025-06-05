@@ -1,17 +1,22 @@
 package model;
 
 public class Solution {
-    private final Board board;
+    private final int[][] grid;
 
-    public Solution(Board board) {
-        this.board = new Board(board.getGrid());
+    public Solution(int[][] grid) {
+        this.grid = new int[9][9];
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                this.grid[i][j] = grid[i][j];
+            }
+        }
     }
 
     public int getCell(int row, int col) {
-        return board.getCell(row, col);
+        return grid[row][col];
     }
 
-    public Board getBoard() {
-        return board;
+    public int[][] getGrid() {
+        return grid;
     }
 }

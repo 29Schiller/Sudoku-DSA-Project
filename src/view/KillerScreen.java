@@ -5,30 +5,45 @@ import model.Puzzle;
 import model.Solution;
 import mode.GameMode;
 import model.Cage;
+import utils.GameModeType;
 import utils.Point;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
+import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class KillerScreen extends GameScreen {
+public class KillerScreen extends JFrame implements GameScreen {
+    private static final int SIZE = 9;
+    private static final int SUBGRID = 3;
     private GameController gameController;
+    private JTextField[][] cells;
+    private JComboBox<String> difficultyBox;
+    private JComboBox<GameModeType> modeBox;
+    private JLabel timeLabel, scoreLabel, statusLabel;
+    private javax.swing.Timer uiTimer;
+    private GameScreenListener listener;
 
     public KillerScreen() {
-        super("Sudoku Game - Killer Mode");
+        setTitle("Sudoku Game - Killer Mode");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+        initializeGUI();
+        pack();
+        setLocationRelativeTo(null);
+        setResizable(false);
     }
 
-    public void setGameController(GameController controller) {
-        this.gameController = controller;
+    private void initializeGUI() {
+        createGameBoard();
+        createControlPanel();
+        createStatusPanel();
     }
 
-    @Override
-    protected void createGameBoard() {
+    private void createGameBoard() {
         JPanel boardPanel = new JPanel(new GridLayout(SIZE, SIZE, 0, 0));
         boardPanel.setBackground(Color.WHITE);
-        boardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        boardPanel.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.BLACK)); // Black border, thickness 1 around board
 
         cells = new JTextField[SIZE][SIZE];
 
@@ -41,14 +56,16 @@ public class KillerScreen extends GameScreen {
                 cells[row][col].setBackground(Color.WHITE);
                 cells[row][col].setLayout(null); // For absolute positioning of sum labels
 
-                int top = (row % SUBGRID == 0) ? 3 : 1;
-                int left = (col % SUBGRID == 0) ? 3 : 1;
-                int bottom = (row % SUBGRID == SUBGRID - 1) ? 3 : 1;
-                int right = (col % SUBGRID == SUBGRID - 1) ? 3 : 1;
+                // Subgrid borders: thickness 1, black; cell borders: thickness 0.5, light gray
+                float top = (row % SUBGRID == 0) ? 1.0f : 0.5f;
+                float left = (col % SUBGRID == 0) ? 1.0f : 0.5f;
+                float bottom = (row % SUBGRID == SUBGRID - 1) ? 1.0f : 0.5f;
+                float right = (col % SUBGRID == SUBGRID - 1) ? 1.0f : 0.5f;
                 Color borderColor = (row % SUBGRID == 0 || col % SUBGRID == 0 ||
                         row % SUBGRID == SUBGRID - 1 || col % SUBGRID == SUBGRID - 1)
-                        ? Color.BLACK : Color.GRAY;
-                cells[row][col].setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, borderColor));
+                        ? Color.BLACK : Color.LIGHT_GRAY;
+                cells[row][col].setBorder(BorderFactory.createMatteBorder(
+                        (int) top, (int) left, (int) bottom, (int) right, borderColor));
 
                 final int r = row, c = col;
                 cells[row][col].addKeyListener(new KeyAdapter() {
@@ -75,6 +92,82 @@ public class KillerScreen extends GameScreen {
         add(boardPanel, BorderLayout.CENTER);
     }
 
+    private void createControlPanel() {
+        JPanel controlPanel = new JPanel(new FlowLayout());
+
+        JButton newGameBtn = new JButton("New Game");
+        JButton solveBtn = new JButton("Solve");
+        JButton hintBtn = new JButton("Hint");
+        JButton checkBtn = new JButton("Check");
+
+        String[] difficulties = {"EASY", "MEDIUM", "HARD", "EXPERT"};
+        difficultyBox = new JComboBox<>(difficulties);
+        modeBox = new JComboBox<>(GameModeType.values());
+
+        newGameBtn.addActionListener(e -> {
+            if (listener != null) {
+                listener.onNewGame(modeBox.getSelectedItem().toString(), (String) difficultyBox.getSelectedItem());
+            }
+        });
+        solveBtn.addActionListener(e -> {
+            if (listener != null) {
+                listener.onSolve();
+            }
+        });
+        hintBtn.addActionListener(e -> {
+            if (listener != null) {
+                listener.onHint();
+            }
+        });
+        checkBtn.addActionListener(e -> {
+            if (listener != null) {
+                listener.onCheck();
+            }
+        });
+
+        controlPanel.add(new JLabel("Mode:"));
+        controlPanel.add(modeBox);
+        controlPanel.add(new JLabel("Difficulty:"));
+        controlPanel.add(difficultyBox);
+        controlPanel.add(newGameBtn);
+        controlPanel.add(hintBtn);
+        controlPanel.add(checkBtn);
+        controlPanel.add(solveBtn);
+
+        add(controlPanel, BorderLayout.NORTH);
+    }
+
+    private void createStatusPanel() {
+        JPanel statusPanel = new JPanel(new FlowLayout());
+
+        timeLabel = new JLabel("Time: 00:00");
+        scoreLabel = new JLabel("Score: 0");
+        statusLabel = new JLabel("Ready to play!");
+
+        statusPanel.add(timeLabel);
+        statusPanel.add(Box.createHorizontalStrut(20));
+        statusPanel.add(scoreLabel);
+        statusPanel.add(Box.createHorizontalStrut(20));
+        statusPanel.add(statusLabel);
+
+        add(statusPanel, BorderLayout.SOUTH);
+
+        uiTimer = new javax.swing.Timer(1000, e -> {
+            if (listener != null) {
+                listener.onTimerTick();
+            }
+        });
+    }
+
+    public void setGameController(GameController controller) {
+        this.gameController = controller;
+    }
+
+    @Override
+    public void setListener(GameScreenListener listener) {
+        this.listener = listener;
+    }
+
     @Override
     public void updateBoard(Puzzle puzzle, Solution solution, GameMode mode) {
         for (int row = 0; row < SIZE; row++) {
@@ -85,24 +178,30 @@ public class KillerScreen extends GameScreen {
                 cells[row][col].setBackground(Color.WHITE);
                 cells[row][col].removeAll(); // Clear any previous sum labels
 
-                int top = (row % SUBGRID == 0) ? 3 : 1;
-                int left = (col % SUBGRID == 0) ? 3 : 1;
-                int bottom = (row % SUBGRID == SUBGRID - 1) ? 3 : 1;
-                int right = (col % SUBGRID == SUBGRID - 1) ? 3 : 1;
+                // Subgrid borders: thickness 1, black; cell borders: thickness 0.5, light gray
+                float top = (row % SUBGRID == 0) ? 1.0f : 0.5f;
+                float left = (col % SUBGRID == 0) ? 1.0f : 0.5f;
+                float bottom = (row % SUBGRID == SUBGRID - 1) ? 1.0f : 0.5f;
+                float right = (col % SUBGRID == SUBGRID - 1) ? 1.0f : 0.5f;
                 Color borderColor = (row % SUBGRID == 0 || col % SUBGRID == 0 ||
                         row % SUBGRID == SUBGRID - 1 || col % SUBGRID == SUBGRID - 1)
-                        ? Color.BLACK : Color.GRAY;
-                cells[row][col].setBorder(BorderFactory.createMatteBorder(top, left, bottom, right, borderColor));
+                        ? Color.BLACK : Color.LIGHT_GRAY;
+                Border matteBorder = BorderFactory.createMatteBorder(
+                        (int) top, (int) left, (int) bottom, (int) right, borderColor);
 
+                // Apply dashed border inside the matte border for cages
                 mode.renderCell(cells[row][col], row, col, puzzle, solution);
-                applyCageBorder(row, col, puzzle);
+                applyCageBorder(row, col, puzzle, matteBorder);
             }
         }
         uiTimer.start();
     }
 
-    private void applyCageBorder(int row, int col, Puzzle puzzle) {
-        if (puzzle.getCages() == null) return;
+    private void applyCageBorder(int row, int col, Puzzle puzzle, Border matteBorder) {
+        if (puzzle.getCages() == null) {
+            cells[row][col].setBorder(matteBorder);
+            return;
+        }
 
         for (Cage cage : puzzle.getCages()) {
             for (int i = 0; i < cage.getCells().size(); i++) {
@@ -118,24 +217,19 @@ public class KillerScreen extends GameScreen {
                         maxCol = Math.max(maxCol, other.y());
                     }
 
-                    // Apply dotted gray border if this cell is on the edge
-                    int topThickness = 1, leftThickness = 1, bottomThickness = 1, rightThickness = 1;
-                    Color topColor = Color.GRAY, leftColor = Color.GRAY, bottomColor = Color.GRAY, rightColor = Color.GRAY;
+                    // Determine which sides of the cell need a dashed border (inside the cell border)
+                    boolean topDashed = row == minRow;
+                    boolean leftDashed = col == minCol;
+                    boolean bottomDashed = row == maxRow;
+                    boolean rightDashed = col == maxCol;
 
-                    if (row == minRow) topThickness = 2;
-                    if (col == minCol) leftThickness = 2;
-                    if (row == maxRow) bottomThickness = 2;
-                    if (col == maxCol) rightThickness = 2;
-
-                    if (row % SUBGRID == 0) { topThickness = 3; topColor = Color.BLACK; }
-                    if (col % SUBGRID == 0) { leftThickness = 3; leftColor = Color.BLACK; }
-                    if (row % SUBGRID == SUBGRID - 1) { bottomThickness = 3; bottomColor = Color.BLACK; }
-                    if (col % SUBGRID == SUBGRID - 1) { rightThickness = 3; rightColor = Color.BLACK; }
-
-                    float[] dash = {2.0f};
-                    Border dashedBorder = BorderFactory.createDashedBorder(Color.GRAY, 1.0F,1F,0.5F, true ); // Fixed: Use correct overload
-                    Border matteBorder = BorderFactory.createMatteBorder(topThickness, leftThickness, bottomThickness, rightThickness, Color.BLACK);
-                    cells[row][col].setBorder(new CompoundBorder(dashedBorder, matteBorder));
+                    // Apply dashed border inside the matte border
+                    float thickness = 1.0f;
+                    float length = 0.5f;
+                    float spacing = 0.2f;
+                    float[] dashPattern = {length, spacing};
+                    Border dashedBorder = new DashedBorder(Color.GRAY, thickness, dashPattern, true, topDashed, leftDashed, bottomDashed, rightDashed);
+                    cells[row][col].setBorder(new CompoundBorder(matteBorder, dashedBorder));
 
                     // Add sum label in top-left corner of the first cell in the cage
                     if (i == 0) {
@@ -160,7 +254,104 @@ public class KillerScreen extends GameScreen {
 
         Puzzle puzzle = gameController != null ? gameController.getCurrentPuzzle() : null;
         if (puzzle != null) {
-            applyCageBorder(row, col, puzzle);
+            // Reapply borders
+            float top = (row % SUBGRID == 0) ? 1.0f : 0.5f;
+            float left = (col % SUBGRID == 0) ? 1.0f : 0.5f;
+            float bottom = (row % SUBGRID == SUBGRID - 1) ? 1.0f : 0.5f;
+            float right = (col % SUBGRID == SUBGRID - 1) ? 1.0f : 0.5f;
+            Color borderColor = (row % SUBGRID == 0 || col % SUBGRID == 0 ||
+                    row % SUBGRID == SUBGRID - 1 || col % SUBGRID == SUBGRID - 1)
+                    ? Color.BLACK : Color.LIGHT_GRAY;
+            Border matteBorder = BorderFactory.createMatteBorder(
+                    (int) top, (int) left, (int) bottom, (int) right, borderColor);
+            applyCageBorder(row, col, puzzle, matteBorder);
+        }
+    }
+
+    @Override
+    public void updateTime(String time) {
+        timeLabel.setText("Time: " + time);
+    }
+
+    @Override
+    public void updateScore(int score) {
+        scoreLabel.setText("Score: " + score);
+    }
+
+    @Override
+    public void updateStatus(String status) {
+        statusLabel.setText(status);
+    }
+
+    @Override
+    public void showVictoryMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Victory!", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    @Override
+    public boolean confirmSolve() {
+        return JOptionPane.showConfirmDialog(this,
+                "This will solve the entire puzzle. Continue?",
+                "Solve Puzzle", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+    }
+
+    @Override
+    public void stopTimer() {
+        uiTimer.stop();
+    }
+
+    // Custom DashedBorder class
+    private static class DashedBorder extends AbstractBorder {
+        private final Color color;
+        private final float thickness;
+        private final float[] dashPattern;
+        private final boolean rounded;
+        private final boolean topDashed, leftDashed, bottomDashed, rightDashed;
+
+        public DashedBorder(Color color, float thickness, float[] dashPattern, boolean rounded,
+                            boolean topDashed, boolean leftDashed, boolean bottomDashed, boolean rightDashed) {
+            this.color = color;
+            this.thickness = thickness;
+            this.dashPattern = dashPattern.clone();
+            this.rounded = rounded;
+            this.topDashed = topDashed;
+            this.leftDashed = leftDashed;
+            this.bottomDashed = bottomDashed;
+            this.rightDashed = rightDashed;
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(thickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, dashPattern, 0.0f));
+
+            int inset = (int) (thickness * 2); // Inset to draw inside the outer matte border
+            int adjustedX = x + inset;
+            int adjustedY = y + inset;
+            int adjustedWidth = width - 2 * inset;
+            int adjustedHeight = height - 2 * inset;
+
+            if (topDashed) g2d.drawLine(adjustedX, adjustedY, adjustedX + adjustedWidth, adjustedY);
+            if (leftDashed) g2d.drawLine(adjustedX, adjustedY, adjustedX, adjustedY + adjustedHeight);
+            if (bottomDashed) g2d.drawLine(adjustedX, adjustedY + adjustedHeight, adjustedX + adjustedWidth, adjustedY + adjustedHeight);
+            if (rightDashed) g2d.drawLine(adjustedX + adjustedWidth, adjustedY, adjustedX + adjustedWidth, adjustedY + adjustedHeight);
+
+            g2d.dispose();
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets((int) (thickness * 2), (int) (thickness * 2), (int) (thickness * 2), (int) (thickness * 2));
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.left = (int) (thickness * 2);
+            insets.top = (int) (thickness * 2);
+            insets.right = (int) (thickness * 2);
+            insets.bottom = (int) (thickness * 2);
+            return insets;
         }
     }
 }
