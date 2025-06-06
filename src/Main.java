@@ -1,9 +1,11 @@
-import validator.*;
-import solver.SudokuSolver;
+import javax.swing.SwingUtilities;
+
 import controller.SudokuGameController;
+import solver.SudokuSolver;
+import validator.StandardSudokuValidator;
+import validator.SudokuValidator;
 import view.GameView;
 import view.WelcomeScreen;
-import javax.swing.SwingUtilities;
 
 public class Main {
     public static void main(String[] args) {
